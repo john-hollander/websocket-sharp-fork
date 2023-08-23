@@ -47,6 +47,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -146,11 +147,6 @@ namespace WebSocketSharp
         /// </remarks>
         internal static readonly int FragmentLength;
 
-        /// <summary>
-        /// Represents the random number generator used internally.
-        /// </summary>
-        internal static readonly RandomNumberGenerator RandomNumber;
-
         #endregion
 
         #region Static Constructor
@@ -160,7 +156,6 @@ namespace WebSocketSharp
             _maxRetryCountForConnect = 10;
             EmptyBytes = new byte[0];
             FragmentLength = 1016;
-            RandomNumber = new RNGCryptoServiceProvider();
         }
 
         #endregion
@@ -2731,16 +2726,13 @@ namespace WebSocketSharp
         // As client
         internal static string CreateBase64Key()
         {
-            var key = new byte[16];
-
-            RandomNumber.GetBytes(key);
-
+            byte[] key = RandomNumberGenerator.GetBytes(16);            
             return Convert.ToBase64String(key);
         }
 
         internal static string CreateResponseKey(string base64Key)
         {
-            SHA1 sha1 = new SHA1CryptoServiceProvider();
+            SHA1 sha1 = SHA1.Create();
 
             var src = base64Key + _guid;
             var bytes = src.GetUTF8EncodedBytes();

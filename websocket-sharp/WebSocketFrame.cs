@@ -37,6 +37,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace WebSocketSharp
@@ -307,12 +308,8 @@ namespace WebSocketSharp
     #region Private Methods
 
     private static byte[] createMaskingKey ()
-    {
-      var key = new byte[_defaultMaskingKeyLength];
-
-      WebSocket.RandomNumber.GetBytes (key);
-
-      return key;
+    {      
+      return RandomNumberGenerator.GetBytes(_defaultMaskingKeyLength);
     }
 
     private static WebSocketFrame processHeader (byte[] header)
