@@ -53,6 +53,7 @@ using System.IO.Compression;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Tasks;
 using WebSocketSharp.Net;
 using WebSocketSharp.Net.WebSockets;
 using WebSocketSharp.Server;
@@ -722,156 +723,68 @@ namespace WebSocketSharp
       }
     }
 
-    internal static void ReadBytesAsync (
-      this Stream stream,
-      int length,
-      Action<byte[]> completed,
-      Action<Exception> error
-    )
-    {
-      var ret = new byte[length];
+        internal static void ReadBytesAsync(this Stream stream, int length, Action<byte[]> completed, Action<Exception> error)
+        {
 
-      var offset = 0;
-      var retry = 0;
+            byte[] buff = new byte[length];
 
-      AsyncCallback callback = null;
-      callback =
-        ar => {
-          try {
-            var nread = stream.EndRead (ar);
+            stream.ReadAsync(buff, 0, length).ContinueWith((x) =>
+            {
+                if (x.Exception?.InnerException != null)
+                {
+                    if (x.Exception.InnerException is ObjectDisposedException || x.Exception.InnerException is NotSupportedException)
+                    {
+                        completed(new byte[0]);
+                    }
+                    else
+                    {
+                        error(x.Exception.InnerException);
+                    }
+                }
+                else
+                {
+                    completed(buff);
+                }
+            }, TaskContinuationOptions.NotOnCanceled);
 
-            if (nread <= 0) {
-              if (retry < _maxRetry) {
-                retry++;
+        }
 
-                stream.BeginRead (ret, offset, length, callback, null);
+        internal static void ReadBytesAsync(this Stream stream, long length, int bufferLength, Action<byte[]> completed, Action<Exception> error)
+        {
+            DoReadAsync(stream, length, bufferLength, completed, error).ContinueWith(x => System.Diagnostics.Debug.WriteLine(x.Result));
+        }
 
-                return;
-              }
-
-              if (completed != null)
-                completed (ret.SubArray (0, offset));
-
-              return;
+        private static async Task<long> DoReadAsync(Stream stream, long length, int bufferLength, Action<byte[]> complected, Action<Exception> error)
+        {
+            var dest = new MemoryStream();
+            var buff = new byte[bufferLength];
+            long nRead = 0;
+            try
+            {
+                while (nRead < length)
+                {
+                    var actualLength = await stream.ReadAsync(buff, 0, bufferLength);
+                    if (actualLength == 0)
+                        break;
+                    nRead += actualLength;
+                    dest.Write(buff, 0, actualLength);
+                }
+                complected(dest.ToArray());
             }
-
-            if (nread == length) {
-              if (completed != null)
-                completed (ret);
-
-              return;
-            }
-
-            retry = 0;
-
-            offset += nread;
-            length -= nread;
-
-            stream.BeginRead (ret, offset, length, callback, null);
-          }
-          catch (Exception ex) {
-            if (error != null)
-              error (ex);
-          }
-        };
-
-      try {
-        stream.BeginRead (ret, offset, length, callback, null);
-      }
-      catch (Exception ex) {
-        if (error != null)
-          error (ex);
-      }
-    }
-
-    internal static void ReadBytesAsync (
-      this Stream stream,
-      long length,
-      int bufferLength,
-      Action<byte[]> completed,
-      Action<Exception> error
-    )
-    {
-      var dest = new MemoryStream ();
-
-      var buff = new byte[bufferLength];
-      var retry = 0;
-
-      Action<long> read = null;
-      read =
-        len => {
-          if (len < bufferLength)
-            bufferLength = (int) len;
-
-          stream.BeginRead (
-            buff,
-            0,
-            bufferLength,
-            ar => {
-              try {
-                var nread = stream.EndRead (ar);
-
-                if (nread <= 0) {
-                  if (retry < _maxRetry) {
-                    retry++;
-
-                    read (len);
-
-                    return;
-                  }
-
-                  if (completed != null) {
-                    dest.Close ();
-
-                    var ret = dest.ToArray ();
-                    completed (ret);
-                  }
-
-                  dest.Dispose ();
-
-                  return;
+            catch (Exception ex)
+            {
+                if (ex is ObjectDisposedException || ex is NotSupportedException)
+                {
+                    complected(new byte[0]);
+                }
+                else
+                {
+                    error(ex);
                 }
 
-                dest.Write (buff, 0, nread);
-
-                if (nread == len) {
-                  if (completed != null) {
-                    dest.Close ();
-                
-                    var ret = dest.ToArray ();
-                    completed (ret);
-                  }
-
-                  dest.Dispose ();
-
-                  return;
-                }
-
-                retry = 0;
-
-                read (len - nread);
-              }
-              catch (Exception ex) {
-                dest.Dispose ();
-
-                if (error != null)
-                  error (ex);
-              }
-            },
-            null
-          );
-        };
-
-      try {
-        read (length);
-      }
-      catch (Exception ex) {
-        dest.Dispose ();
-
-        if (error != null)
-          error (ex);
-      }
-    }
+            }
+            return nRead;
+        }
 
     internal static T[] Reverse<T> (this T[] array)
     {

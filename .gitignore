@@ -5,6 +5,7 @@ _UpgradeReport_Files
 bin
 obj
 
+.vs/
 *.mdb
 *.pdb
 *.pidb
