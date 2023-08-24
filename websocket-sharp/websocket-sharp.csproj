@@ -9,7 +9,7 @@
     <AssemblyVersion>1.1.0.0</AssemblyVersion>
     <Copyright>sta.blockhead</Copyright>
     <Title>websocket-sharp</Title>
-    <Description>A C# implementation of the WebSocket protocol client and server</Description>
+    <Description>A C# implementation of the WebSocket protocol client and server</Description>        
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug</OutputPath>
@@ -18,7 +18,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Release</OutputPath>
+    <OutputPath>..\Compiled\</OutputPath>
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug_Ubuntu|AnyCPU' ">
@@ -43,10 +43,5 @@
     <Folder Include="Server\" />
     <Folder Include="Net\" />
     <Folder Include="Net\WebSockets\" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
   </ItemGroup>
 </Project>
